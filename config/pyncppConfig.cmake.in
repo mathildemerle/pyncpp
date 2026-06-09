@@ -18,8 +18,9 @@ set(pyncpp_PYTHON_SHORT_VERSION "${pyncpp_PYTHON_VERSION_MAJOR}.${pyncpp_PYTHON_
 set(pyncpp_PYTHON_VERSION "${pyncpp_PYTHON_SHORT_VERSION}.${pyncpp_PYTHON_VERSION_PATCH}")
 
 set(pyncpp_PYTHON_INSTALL_DESTINATION "@PYNCPP_PYTHON_SUBDIR@")
-
 set(pyncpp_PYTHON_DIR "${_PREFIX_DIR}/${pyncpp_PYTHON_INSTALL_DESTINATION}")
+
+set(pyncpp_PYTHON_USE_FRAMEWORK @PYNCPP_PYTHON_USE_FRAMEWORK@)
 
 if(pyncpp_FIND_REQUIRED_CPP_API)
     include("${_PREFIX_DIR}/@PYNCPP_SHARE_SUBDIR@/pyncpp_exports.cmake")
@@ -30,6 +31,15 @@ endif()
 if(NOT TARGET pyncpp_python_executable)
     add_executable(pyncpp_python_executable IMPORTED GLOBAL)
     add_library(pyncpp_python_library SHARED IMPORTED GLOBAL)
+
+    if(APPLE AND pyncpp_PYTHON_USE_FRAMEWORK)
+        set_target_properties(pyncpp_python_library PROPERTIES
+            FRAMEWORK TRUE
+            FRAMEWORK_VERSION "${pyncpp_PYTHON_SHORT_VERSION}"
+            MACOSX_FRAMEWORK_IDENTIFIER "org.python.Python"
+            MACOSX_FRAMEWORK_BUNDLE_VERSION "${pyncpp_PYTHON_VERSION}"
+            )
+    endif()
 
     if(WIN32)
         set(_version ${pyncpp_PYTHON_VERSION_MAJOR}${pyncpp_PYTHON_VERSION_MINOR})
@@ -49,14 +59,36 @@ if(NOT TARGET pyncpp_python_executable)
         set(_exec_path "pythonw${_debug_suffix}.exe")
         set(_lib_path "python${_version}${_debug_suffix}.dll")
         set(_devlib_path "libs/python${_version}${_debug_suffix}.lib")
+    elseif(APPLE AND pyncpp_PYTHON_USE_FRAMEWORK)
+        set(_framework_base "Python.framework/Versions/${pyncpp_PYTHON_SHORT_VERSION}")
+        set(_exec_path "${_framework_base}/bin/python${_version}")
+        set(_lib_path "${_framework_base}/Python")
+        set(_include_dir_path "${_framework_base}/include/python${_version}")
     else()
         set(_exec_path "bin/python${_version}")
         set(_lib_path "lib/libpython${_version}${CMAKE_SHARED_LIBRARY_SUFFIX}")
+        set(_include_dir_path "include/python${_version}")
     endif()
 
+    # Get path root
     set(_path_root "${_PREFIX_DIR}/${pyncpp_PYTHON_INSTALL_DESTINATION}")
 
-    if(EXISTS "${_path_root}/${_exec_path}")
+    if(APPLE AND pyncpp_PYTHON_USE_FRAMEWORK)
+        set(_full_path_root "${_path_root}/Python.framework/Versions/${pyncpp_PYTHON_SHORT_VERSION}")
+    else()
+        set(_full_path_root "${_path_root}")
+    endif()
+
+    if(EXISTS "${_full_path_root}/${_exec_path}" OR 
+       (APPLE AND pyncpp_PYTHON_USE_FRAMEWORK AND EXISTS "${_path_root}/${_exec_path}"))
+
+        # Handle if framework is at root
+        if(APPLE AND pyncpp_PYTHON_USE_FRAMEWORK AND EXISTS "${_path_root}/${_exec_path}")
+            set(_actual_path_root "${_path_root}")
+        else()
+            set(_actual_path_root "${_full_path_root}")
+        endif()
+
         if(_GENERATOR_IS_MULTI_CONFIG)
             string(TOUPPER ${_CONFIG} _CONFIG_UPPER)
             set(_property_prefix _${_CONFIG_UPPER})
@@ -70,22 +102,37 @@ if(NOT TARGET pyncpp_python_executable)
             IMPORTED_LOCATION${_property_prefix} "${_path_root}/${_exec_path}"
             )
 
-        set_target_properties(pyncpp_python_library PROPERTIES
-            IMPORTED_LOCATION${_property_prefix} "${_path_root}/${_lib_path}"
-            )
-
-        if(WIN32)
+       if(APPLE AND pyncpp_PYTHON_USE_FRAMEWORK)
             set_target_properties(pyncpp_python_library PROPERTIES
-                IMPORTED_IMPLIB${_property_prefix} "${_path_root}/${_devlib_path}"
+                IMPORTED_LOCATION${_property_prefix} "${_actual_path_root}/${_lib_path}"
+                MACOSX_FRAMEWORK_LOCATION "${_actual_path_root}"
                 )
-            set(_include_dir "${_path_root}/include")
+
+            set(_framework_include_dir "${_actual_path_root}/include/python${_version}")
+            set(_include_dir "${_framework_include_dir}")
         else()
-            set(_include_dir "${_path_root}/include/python@PYNCPP_PYTHON_SHORT_VERSION@")
+            set_target_properties(pyncpp_python_library PROPERTIES
+                IMPORTED_LOCATION${_property_prefix} "${_path_root}/${_lib_path}"
+                )
+
+            if(WIN32)
+                set_target_properties(pyncpp_python_library PROPERTIES
+                    IMPORTED_IMPLIB${_property_prefix} "${_actual_path_root}/${_devlib_path}"
+                    )
+                set(_include_dir "${_actual_path_root}/include")
+            else()
+                set(_include_dir "${_actual_path_root}/${_include_dir_path}")
+            endif()
         endif()
     endif()
 
-    if(_include_dir)
+    if(_include_dir AND EXISTS "${_include_dir}")
         target_include_directories(pyncpp_python_library INTERFACE "${_include_dir}")
+
+        if(APPLE AND pyncpp_PYTHON_USE_FRAMEWORK)
+            get_filename_component(_framework_dir "${_include_dir}/../.." ABSOLUTE)
+            target_include_directories(pyncpp_python_library INTERFACE "${_framework_dir}")
+        endif()
     endif()
 
     set(pyncpp_PYTHON_EXECUTABLE pyncpp_python_executable)
