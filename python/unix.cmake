@@ -17,8 +17,6 @@ set(PYNCPP_PYTHON_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} CACHE STRING
     "Linker flags for Python."
     )
 
-set(PYNCPP_PYTHON_USE_FRAMEWORK ON CACHE BOOL "Use macOS framework build instead of shared library")
-
 if(LINUX)
     list(APPEND PYNCPP_PYTHON_SHARED_LINKER_FLAGS "-Wl,-rpath,'$$ORIGIN/../lib'")
 endif()
@@ -59,7 +57,7 @@ set(configure_args
     $<$<CONFIG:Release>:--with-lto>
     )
 
-if(APPLE AND PYNCPP_PYTHON_USE_FRAMEWORK)
+if(APPLE)
     list(APPEND configure_args "--enable-framework=${PROJECT_BINARY_DIR}/${PYNCPP_PYTHON_SUBDIR}")
     list(APPEND configure_args "--with-framework-name=Python")
 else()
@@ -112,7 +110,7 @@ set(post_install_arguments
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/relocatable_sysconfig.py"
     )
 
-if(APPLE AND PYNCPP_PYTHON_USE_FRAMEWORK)
+if(APPLE)
     message(STATUS "Using Python framework, install_name_tool not needed")
 else()
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/unix_launcher.sh.in" "${prefix}/tmp/unix_launcher.sh" @ONLY)
@@ -135,7 +133,7 @@ ExternalProject_Add_Step(pyncpp_python post_install
 
 set(programs "${executable_path}")
 
-if(NOT APPLE AND NOT PYNCPP_PYTHON_USE_FRAMEWORK)
+if(NOT APPLE)
     list(APPEND programs "${executable_path}_bin")
 endif()
 
@@ -144,7 +142,7 @@ install(PROGRAMS ${programs}
     COMPONENT Runtime
     )
 
-if(APPLE AND PYNCPP_PYTHON_USE_FRAMEWORK)
+if(APPLE)
     install(DIRECTORY "${PROJECT_BINARY_DIR}/${PYNCPP_PYTHON_SUBDIR}/Python.framework"
         DESTINATION "${PYNCPP_PYTHON_SUBDIR}"
         COMPONENT Runtime
@@ -174,17 +172,15 @@ else()
         COMPONENT Development
         )
 
-    if(NOT APPLE)
-        install(CODE "
-            file(INSTALL \"${PROJECT_BINARY_DIR}/${PYNCPP_PYTHON_SUBDIR}/lib/${library_soname}\"
-                DESTINATION \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${PYNCPP_PYTHON_SUBDIR}/lib\"
-                )
-            file(CREATE_LINK \"python${PYNCPP_PYTHON_SHORT_VERSION}/lib/${library_soname}\"
-                \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/lib/${library_soname}\"
-                SYMBOLIC
-                )
-            "
-            COMPONENT Runtime
+    install(CODE "
+        file(INSTALL \"${PROJECT_BINARY_DIR}/${PYNCPP_PYTHON_SUBDIR}/lib/${library_soname}\"
+            DESTINATION \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${PYNCPP_PYTHON_SUBDIR}/lib\"
             )
-    endif()
+        file(CREATE_LINK \"python${PYNCPP_PYTHON_SHORT_VERSION}/lib/${library_soname}\"
+            \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/lib/${library_soname}\"
+            SYMBOLIC
+            )
+        "
+        COMPONENT Runtime
+        )
 endif()
