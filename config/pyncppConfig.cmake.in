@@ -111,7 +111,7 @@ if(NOT TARGET pyncpp_python_executable)
                 MACOSX_FRAMEWORK_LOCATION "${_actual_path_root}"
                 )
 
-            set(_framework_include_dir "${_actual_path_root}/include/python${_version}")
+            set(_framework_include_dir "${_actual_path_root}/${_include_dir_path}")
             set(_include_dir "${_framework_include_dir}")
             message(STATUS "### CONFIG _framework_include_dir: ${_framework_include_dir}")
             message(STATUS "### CONFIG _include_dir: ${_include_dir}")
