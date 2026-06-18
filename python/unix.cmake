@@ -59,7 +59,7 @@ set(configure_args
 
 if(APPLE)
     list(APPEND configure_args "--enable-framework=${PROJECT_BINARY_DIR}/${PYNCPP_PYTHON_SUBDIR}")
-    list(APPEND configure_args "--with-pydebug") # to get Development.Module (for VTK for instance)
+    #list(APPEND configure_args "--with-pydebug") # to get Development.Module (for VTK for instance)
 else()
     list(APPEND configure_args --enable-shared)
 endif()
