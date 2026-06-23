@@ -84,7 +84,7 @@ endif()
 set(executable_path "${PROJECT_BINARY_DIR}/${PYNCPP_PYTHON_SUBDIR}/bin/python${PYNCPP_PYTHON_SHORT_VERSION}")
 
 if (APPLE)
-    set(library_path "${PROJECT_BINARY_DIR}/${PYNCPP_PYTHON_SUBDIR}/lib/libpython${PYNCPP_PYTHON_SHORT_VERSION}${CMAKE_SHARED_LIBRARY_SUFFIX}")
+    set(library_path "${PROJECT_BINARY_DIR}/${PYNCPP_PYTHON_SUBDIR}/Python.framework/Versions/${PYNCPP_PYTHON_SHORT_VERSION}/Python")
 else()
     set(library_path "${PROJECT_BINARY_DIR}/${PYNCPP_PYTHON_SUBDIR}/lib/libpython${PYNCPP_PYTHON_SHORT_VERSION}${CMAKE_SHARED_LIBRARY_SUFFIX}")
 endif() # TODO check linux path
