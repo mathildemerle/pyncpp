@@ -87,8 +87,7 @@ if (APPLE)
     set(library_path "${PROJECT_BINARY_DIR}/${PYNCPP_PYTHON_SUBDIR}/Python.framework/Versions/${PYNCPP_PYTHON_SHORT_VERSION}/Python")
 else()
     set(library_path "${PROJECT_BINARY_DIR}/${PYNCPP_PYTHON_SUBDIR}/lib/libpython${PYNCPP_PYTHON_SHORT_VERSION}${CMAKE_SHARED_LIBRARY_SUFFIX}")
-endif() # TODO check linux path
-message(STATUS "### UNIX.CMAKE library_path: ${library_path}")
+endif()
 
 ################################################################################
 # External project
@@ -151,11 +150,21 @@ if(APPLE)
         USE_SOURCE_PERMISSIONS
         PATTERN "*.pyc" EXCLUDE
         )
+    message(STATUS "### UNIX.CMAKE DIRECTORY: ${PROJECT_BINARY_DIR}/${PYNCPP_PYTHON_SUBDIR}/Python.framework")
 
     install(DIRECTORY "${PROJECT_BINARY_DIR}/${PYNCPP_PYTHON_SUBDIR}/Python.framework/Versions/${PYNCPP_PYTHON_SHORT_VERSION}/include/"
         DESTINATION "${PYNCPP_PYTHON_SUBDIR}/include"
         COMPONENT Development
         )
+    message(STATUS "### UNIX.CMAKE DIRECTORY2: ${PROJECT_BINARY_DIR}/${PYNCPP_PYTHON_SUBDIR}/Python.framework/Versions/${PYNCPP_PYTHON_SHORT_VERSION}/include/")
+
+    install(FILES
+        "${library_path}"
+        DESTINATION "${PYNCPP_PYTHON_SUBDIR}/lib"
+        COMPONENT Runtime
+        )
+    message(STATUS "### UNIX.CMAKE library_path: ${library_path}")
+
 else()
     install(FILES
         "${library_path}"
